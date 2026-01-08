@@ -101,7 +101,7 @@ public:
 
   virtual bool forwardViaUDPFirst() const
   {
-    return false;
+    return d_handler.isTLS();
   }
   virtual std::unique_ptr<DOHUnitInterface> getDOHUnit(uint32_t streamID)
   {

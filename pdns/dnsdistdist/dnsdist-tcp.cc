@@ -863,16 +863,6 @@ IncomingTCPConnectionState::QueryProcessingResult IncomingTCPConnectionState::ha
     dnsQuestion.ids.skipCache = true;
   }
 
-  if (forwardViaUDPFirst()) {
-    // if there was no EDNS, we add it with a large buffer size
-    // so we can use UDP to talk to the backend.
-    const dnsheader_aligned dnsHeader(query.data());
-    if (dnsHeader->arcount == 0U) {
-      if (addEDNS(query, 4096, false, 4096, 0)) {
-        dnsQuestion.ids.ednsAdded = true;
-      }
-    }
-  }
 
   if (streamID) {
     auto unit = getDOHUnit(*streamID);
@@ -948,6 +938,12 @@ IncomingTCPConnectionState::QueryProcessingResult IncomingTCPConnectionState::ha
     return QueryProcessingResult::Forwarded;
   }
   if (!backend->isTCPOnly() && forwardViaUDPFirst()) {
+    const dnsheader_aligned dnsHeader(query.data());
+    if (dnsHeader->arcount == 0U) {
+      if (addEDNS(query, 4096, false, 4096, 0)) {
+        dnsQuestion.ids.ednsAdded = true;
+      }
+    }
     if (streamID) {
       auto unit = getDOHUnit(*streamID);
       if (unit) {
