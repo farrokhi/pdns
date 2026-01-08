@@ -621,6 +621,23 @@ static void processDOH3Query(DOH3UnitUniquePtr&& doh3Unit)
 
     unit->downstream = downstream;
 
+    if (!downstream->isTCPOnly()) {
+      auto& query = unit->query;
+      const dnsheader_aligned dnsHeader(query.data());
+      if (dnsHeader->arcount == 0U) {
+        if (addEDNS(query, 4096, false, 4096, 0)) {
+          unit->ids.ednsAdded = true;
+        }
+      }
+
+      unit->ids.origID = htons(queryId);
+      unit->ids.doh3u = std::move(unit);
+      if (assignOutgoingUDPQueryToBackend(downstream, htons(queryId), dnsQuestion, query)) {
+        return;
+      }
+      unit = std::move(dnsQuestion.ids.doh3u);
+    }
+
     std::string proxyProtocolPayload;
     /* we need to do this _before_ creating the cross protocol query because
        after that the buffer will have been moved */
